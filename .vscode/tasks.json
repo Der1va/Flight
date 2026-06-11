@@ -12,6 +12,28 @@
 			"group": "build",
 			"problemMatcher": [],
 			"detail": "CMake template build task"
+		},
+		{
+			"label": "STM32: flash",
+			"type": "shell",
+			"command": "STM32_Programmer_CLI",
+			"args": [
+				"-c",
+				"port=SWD",
+				"mode=UR",
+				"reset=HWrst",
+				"-w",
+				"${workspaceFolder}/build/Debug/Flight.elf",
+				"-v",
+				"-rst"
+			],
+			"dependsOn": "CMake: build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"detail": "Build and flash Flight.elf with ST-Link"
 		}
 	]
-}	
+}
