@@ -34,6 +34,10 @@ enable_language(C ASM)
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
 
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+    -u _printf_float
+)
+
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
@@ -59,7 +63,14 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Interface/Int_IP5305T.c
     Interface/Int_Motor.c
     Interface/Int_LED.c
+    Interface/Int_SI24R1.c
     Common/common_config.c
+    Application/Application_receive.c
+    Interface/Int_MPU6050.c
+    Application/Application_flight.c
+    Common/common_filter.c
+    Common/common_imu.c
+    Common/common_pid.c
 )
 
 # Add include paths

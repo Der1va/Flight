@@ -1,6 +1,4 @@
 #include "Application.h"
-#include "stm32f1xx_hal_tim.h"
-
 
 Motor_Struct Left_Motor_top = {.tim = &htim3, .channel = TIM_CHANNEL_1, .speed = 100};
 Motor_Struct Left_Motor_bottom = {.tim = &htim4, .channel = TIM_CHANNEL_4, .speed = 100};
@@ -18,11 +16,11 @@ void Power_Task(void *args);
 #define POWER_TASK_PRIORITY 4
 #define POWER_KEY_PERIOD 10000
 TaskHandle_t POWER_Handler;
-
+static SemaphoreHandle_t PowerOff_Semaphore;
 
 // 飞行任务
 void Flight_Task(void *args);
-#define FLIGHT_TASK_STACK_SIZE 128
+#define FLIGHT_TASK_STACK_SIZE 256
 #define FLIGHT_TASK_PRIORITY 3
 #define FLIGHT_TASK_PERIOD 6
 TaskHandle_t FLIGHT_Handler;
@@ -35,32 +33,55 @@ void LED_Task(void *args);
 TaskHandle_t LED_Handler;
 
 
+//通讯任务
+void comm_Task(void *args);
+
+#define COMM_TASK_STACK_SIZE 256
+#define COMM_TASK_PRIORITY 2
+TaskHandle_t COMM_Handler;
+//任务周期
+#define COMM_TASK_PERIOD 6
+
 //表示当前遥控状态
 Remote_State remote_state = REMOTE_STATE_DISCONNECTED;
 
 //表示当前飞行状态
-Flight_State flight_state = FLIGHT_STATE_NORMAL;
+Flight_State flight_state = FLIGHT_STATE_IDLE;
+
+//表示接收的数据
+Remote_Data remote_data = {0};
 
 void App_FreeRTOS_Start(void)
 {
+    PowerOff_Semaphore = xSemaphoreCreateBinary();
+    if(PowerOff_Semaphore == NULL)
+    {
+        Error_Handler();
+    }
     // 创建电源管理任务
     xTaskCreate(Power_Task, "Power_Task", POWER_TASK_STACK_SIZE, NULL, POWER_TASK_PRIORITY, &POWER_Handler);
     // 创建飞行任务
     xTaskCreate(Flight_Task, "Flight_Task", FLIGHT_TASK_STACK_SIZE, NULL, FLIGHT_TASK_PRIORITY, &FLIGHT_Handler);
     // 创建LED任务
     xTaskCreate(LED_Task, "LED_Task", LED_TASK_STACK_SIZE, NULL, LED_TASK_PRIORITY, &LED_Handler);
-    
+    // 创建通信任务
+    xTaskCreate(comm_Task, "comm_Task", COMM_TASK_STACK_SIZE, NULL, COMM_TASK_PRIORITY, &COMM_Handler);
     vTaskStartScheduler();
 }
 
 
 void Power_Task(void *args)
 {
-    TickType_t xLastWakeTime = xTaskGetTickCount();
     while (1)
     {
-        vTaskDelayUntil(&xLastWakeTime, POWER_KEY_PERIOD);
-        Int_IP5305T_Start();
+        if(xSemaphoreTake(PowerOff_Semaphore, POWER_KEY_PERIOD) == pdTRUE)
+        {
+            Int_IP5305T_Stop();
+        }
+        else
+        {
+            Int_IP5305T_Start();
+        }
     }
 }
 
@@ -68,9 +89,11 @@ void Power_Task(void *args)
 void Flight_Task(void *args)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
+    Int_MPU6050_Init();
     while (1)
     {
 
+        App_Calculate_Euler_Angles();
         /* Int_Motor_start(&Left_Motor_top);
         Int_Motor_start(&Left_Motor_bottom);
         Int_Motor_start(&Right_Motor_top);
@@ -137,5 +160,25 @@ void LED_Task(void *args)
         }
 
         vTaskDelayUntil(&xLastWakeTime, LED_TASK_PERIOD);
+    }
+}
+
+void comm_Task(void *args)
+{
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    while (1)
+    {
+        uint8_t result = App_Receive_data();
+        App_process_connect_state(result);
+
+        if(result == 0 && remote_data.shut_down == 1)
+        {
+            remote_data.shut_down = 0;
+            xSemaphoreGive(PowerOff_Semaphore);
+        }
+
+        App_process_flight_state();
+
+        vTaskDelayUntil(&xLastWakeTime, COMM_TASK_PERIOD);
     }
 }
