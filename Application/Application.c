@@ -1,9 +1,5 @@
 #include "Application.h"
-
-Motor_Struct Left_Motor_top = {.tim = &htim3, .channel = TIM_CHANNEL_1, .speed = 100};
-Motor_Struct Left_Motor_bottom = {.tim = &htim4, .channel = TIM_CHANNEL_4, .speed = 100};
-Motor_Struct Right_Motor_top = {.tim = &htim2, .channel = TIM_CHANNEL_2, .speed = 100};
-Motor_Struct Right_Motor_bottom = {.tim = &htim1, .channel = TIM_CHANNEL_3, .speed = 100};
+#include <stdint.h>
 
 LED_Struct LED_1 = {.port = LED1_GPIO_Port, .pin = LED1_Pin};
 LED_Struct LED_2 = {.port = LED2_GPIO_Port, .pin = LED2_Pin};
@@ -20,7 +16,7 @@ static SemaphoreHandle_t PowerOff_Semaphore;
 
 // 飞行任务
 void Flight_Task(void *args);
-#define FLIGHT_TASK_STACK_SIZE 256
+#define FLIGHT_TASK_STACK_SIZE 512
 #define FLIGHT_TASK_PRIORITY 3
 #define FLIGHT_TASK_PERIOD 6
 TaskHandle_t FLIGHT_Handler;
@@ -36,11 +32,11 @@ TaskHandle_t LED_Handler;
 //通讯任务
 void comm_Task(void *args);
 
-#define COMM_TASK_STACK_SIZE 256
-#define COMM_TASK_PRIORITY 2
+#define COMM_TASK_STACK_SIZE 512
+#define COMM_TASK_PRIORITY 4
 TaskHandle_t COMM_Handler;
 //任务周期
-#define COMM_TASK_PERIOD 6
+#define COMM_TASK_PERIOD 10
 
 //表示当前遥控状态
 Remote_State remote_state = REMOTE_STATE_DISCONNECTED;
@@ -49,7 +45,11 @@ Remote_State remote_state = REMOTE_STATE_DISCONNECTED;
 Flight_State flight_state = FLIGHT_STATE_IDLE;
 
 //表示接收的数据
-Remote_Data remote_data = {0};
+Remote_Data remote_data = {.thr = 0, .yaw = 500, .pitch = 500, .roll = 500, .shut_down = 0, .fix_height = 0};
+
+//定高高度
+uint16_t fix_height = 0;
+uint8_t back_buff[TX_PLOAD_WIDTH] = {0};
 
 void App_FreeRTOS_Start(void)
 {
@@ -78,10 +78,6 @@ void Power_Task(void *args)
         {
             Int_IP5305T_Stop();
         }
-        else
-        {
-            Int_IP5305T_Start();
-        }
     }
 }
 
@@ -89,15 +85,25 @@ void Power_Task(void *args)
 void Flight_Task(void *args)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    Int_MPU6050_Init();
+    App_Flight_Start();
+    uint8_t count = 0;
     while (1)
     {
-
         App_Calculate_Euler_Angles();
-        /* Int_Motor_start(&Left_Motor_top);
-        Int_Motor_start(&Left_Motor_bottom);
-        Int_Motor_start(&Right_Motor_top);
-        Int_Motor_start(&Right_Motor_bottom); */
+
+        App_flight_pid_process();
+
+        if(flight_state == FLIGHT_STATE_STOPPED)
+        {
+            count++;
+            if(count >= 4)
+            {
+                App_flight_fix_height_pid_process();
+                count = 0;
+            }
+        }
+        
+        App_flight_control_motor();
 
         vTaskDelayUntil(&xLastWakeTime, FLIGHT_TASK_PERIOD);
     }
@@ -165,7 +171,7 @@ void LED_Task(void *args)
 
 void comm_Task(void *args)
 {
-    TickType_t xLastWakeTime = xTaskGetTickCount();
+    Int_BAT_ADC_Init();
     while (1)
     {
         uint8_t result = App_Receive_data();
@@ -179,6 +185,18 @@ void comm_Task(void *args)
 
         App_process_flight_state();
 
-        vTaskDelayUntil(&xLastWakeTime, COMM_TASK_PERIOD);
+        uint16_t voltage_mv = Int_BAT_ADC_Read_mV();
+
+        for(uint8_t i = 0; i < TX_PLOAD_WIDTH; i++)
+        {
+            back_buff[i] = 0;
+        }
+
+        back_buff[0] = 'B';
+        back_buff[1] = 'V';
+        back_buff[2] = (voltage_mv >> 8) & 0xFF;
+        back_buff[3] = voltage_mv & 0xFF;
+
+        vTaskDelay(COMM_TASK_PERIOD);
     }
 }

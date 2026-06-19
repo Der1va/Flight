@@ -71,6 +71,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Common/common_filter.c
     Common/common_imu.c
     Common/common_pid.c
+    Interface/fix_height/VL53L1X_calibration.c
+    Interface/fix_height/VL53L1X_api.c
+    Interface/fix_height/vl53l1_platform.c
+    Interface/Int_VL53L1X.c
+    Interface/Int_BAT_ADC.c
 )
 
 # Add include paths
@@ -82,6 +87,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Common
     Application
     Interface
+    Interface/fix_height
 )
 
 # Add project symbols (macros)

@@ -11,6 +11,7 @@
 #include "Int_IP5305T.h"
 #include "Int_Motor.h"
 #include "Int_SI24R1.h"
+#include "Int_BAT_ADC.h"
 #include "Application_flight.h"
 #include "Application_receive.h"
 

@@ -1,8 +1,12 @@
 #include "Application_receive.h"
+#include <stdint.h>
+
 
 extern Remote_Data remote_data;
 extern Remote_State remote_state;
 extern Flight_State flight_state;
+extern uint16_t fix_height;
+extern uint8_t back_buff[TX_PLOAD_WIDTH];
 Thr_State thr_state = FREE;
 //MAX状态的进入时间
 uint32_t max_state_enter_time = 0;
@@ -15,7 +19,16 @@ uint8_t retry_count = 0;
 uint8_t App_Receive_data(void)
 {
     memset(rx_buff, 0, TX_PLOAD_WIDTH);
-    Int_SI24R1_RxPacket(rx_buff);
+    uint8_t result = Int_SI24R1_RxPacket(rx_buff);
+    if(result == 0)
+    {
+        Int_SI24R1_TX_Mode();
+        uint16_t count = 500;
+        while(Int_SI24R1_TxPacket(back_buff) == 1 && count--)
+        {
+        }
+        Int_SI24R1_RX_Mode();
+    }
     if(strlen((char*)rx_buff) == 0)
     {
         return 1;
@@ -152,7 +165,7 @@ void App_process_flight_state(void)
             }
             break;
         case FLIGHT_STATE_STOPPED:
-            // 飞行器处于停止状态，执行降落或悬停逻辑
+            fix_height = Int_VL53L1X_Read_Distance();
             if(remote_data.fix_height == 1)
             {
                 // 取消定高，恢复正常飞行
@@ -167,8 +180,7 @@ void App_process_flight_state(void)
             break;
         case FLIGHT_STATE_ERROR:
             // 飞行器处于错误状态，执行紧急处理逻辑
-            vTaskDelay(1);
-            // 这里可以添加一些错误处理逻辑，比如重置飞行器状态、发送报警信息等
+            ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // 等待通信任务的通知，确保通信任务已经处理完毕
             flight_state = FLIGHT_STATE_IDLE; // 重置为初始状态，等待下一次起飞指令
 
             break;

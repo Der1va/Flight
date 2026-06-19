@@ -61,6 +61,8 @@ void Error_Handler(void);
 #define SPI1_NSS_GPIO_Port GPIOA
 #define POWER_KEY_Pin GPIO_PIN_2
 #define POWER_KEY_GPIO_Port GPIOB
+#define VX_XSHUT_Pin GPIO_PIN_12
+#define VX_XSHUT_GPIO_Port GPIOB
 #define LED4_Pin GPIO_PIN_14
 #define LED4_GPIO_Port GPIOB
 #define LED3_Pin GPIO_PIN_15
@@ -71,6 +73,8 @@ void Error_Handler(void);
 #define LED2_GPIO_Port GPIOA
 #define LED1_Pin GPIO_PIN_12
 #define LED1_GPIO_Port GPIOA
+#define BAT_ADC_EN_Pin GPIO_PIN_5
+#define BAT_ADC_EN_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

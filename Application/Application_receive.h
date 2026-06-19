@@ -2,6 +2,10 @@
 #define __APPLICATION_RECEIVE_H__
 
 #include "Int_SI24R1.h"
+#include "Int_VL53L1X.h"
+#include "Int_MPU6050.h"
+#include "portmacro.h"
+#include "projdefs.h"
 #include "common_config.h"
 #include "common_debug.h"
 #include <stdint.h>
@@ -11,7 +15,7 @@
 #define FRAME_HEADER_CHECK2 'z'
 #define FRAME_HEADER_CHECK3 't'
 
-#define MAX_RETRY_COUNT 5
+#define MAX_RETRY_COUNT 20
 
 /**
     * @brief 处理接收到的数据
