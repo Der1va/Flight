@@ -19,7 +19,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME Flight)
+set(CMAKE_PROJECT_NAME Remote_Hal)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -57,6 +57,15 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Common/common_debug.c
     Application/Application.c
     Interface/Int_IP5305T.c
+    Interface/Int_SI24R1.c
+    Interface/Int_KEY.c
+    Interface/Int_Joystick.c
+    Application/Application_process_data.c
+    Common/common_tool.c
+    Application/Application_transmit_data.c
+    Interface/OLED/Inf_OLED.c
+    Interface/OLED/Inf_font.c
+    Application/Application_display.c
 )
 
 # Add include paths
@@ -68,6 +77,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Common
     Application
     Interface
+    Interface/OLED
 )
 
 # Add project symbols (macros)

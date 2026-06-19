@@ -23,7 +23,7 @@
 				"mode=UR",
 				"reset=HWrst",
 				"-w",
-				"${workspaceFolder}/build/Debug/Flight.elf",
+				"${workspaceFolder}/build/Debug/Remote_Hal.elf",
 				"-v",
 				"-rst"
 			],
@@ -33,7 +33,7 @@
 				"isDefault": true
 			},
 			"problemMatcher": [],
-			"detail": "Build and flash Flight.elf with ST-Link"
+			"detail": "Build and flash Remote_Hal.elf with ST-Link"
 		}
 	]
 }

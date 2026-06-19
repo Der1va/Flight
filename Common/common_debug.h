@@ -11,7 +11,7 @@ int fputc(int ch, FILE *f);
 
 
 
-#ifdef Debug_Enable
+#if Debug_Enable
 #define Debug_Printf(format, ...) printf("[%s:%d] "  format, __FILE_NAME__, __LINE__, ##__VA_ARGS__)
 #else
 #define Debug_Printf(...)

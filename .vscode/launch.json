@@ -2,18 +2,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "stlinkgdbtarget",
+            "name": "Cortex-Debug: ST-Link",
+            "type": "cortex-debug",
             "request": "launch",
-            "name": "STM32Cube: Launch ST-Link GDB Server",
-            "origin": "snippet",
             "cwd": "${workspaceFolder}",
-            "preBuild": "${command:st-stm32-ide-debug-launch.build}",
-            "runEntry": "main",
-            "imagesAndSymbols": [
-                {
-                    "imageFileName": "${workspaceFolder}/build/Debug/Flight.elf"
-                }
-            ]
+            "executable": "${workspaceFolder}/build/Debug/Remote_Hal.elf",
+            "servertype": "stlink",
+            "device": "STM32F103C8",
+            "interface": "swd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: build",
+            "gdbPath": "E:/STM32CubeCLT_1.21.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+            "serverpath": "E:/STM32CubeCLT_1.21.0/STLink-gdb-server/bin/ST-LINK_gdbserver.exe",
+            "stm32cubeprogrammer": "E:/STM32CubeCLT_1.21.0/STM32CubeProgrammer/bin",
+            "svdFile": "E:/STM32CubeCLT_1.21.0/STMicroelectronics_CMSIS_SVD/STM32F103.svd",
+            "showDevDebugOutput": "raw"
         }
     ]
 }

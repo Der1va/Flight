@@ -4,7 +4,40 @@
             "name": "STM32",
             "configurationProvider": "ms-vscode.cmake-tools",
             "compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json",
-            "compilerPath": "arm-none-eabi-gcc",
+            "compilerPath": "E:/STM32CubeCLT_1.21.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc.exe",
+            "includePath": [
+                "${workspaceFolder}/Core/Inc",
+                "${workspaceFolder}/Drivers/STM32F1xx_HAL_Driver/Inc",
+                "${workspaceFolder}/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
+                "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
+                "${workspaceFolder}/Drivers/CMSIS/Include",
+                "${workspaceFolder}/FreeRTOS/include",
+                "${workspaceFolder}/FreeRTOS/portable",
+                "${workspaceFolder}/FreeRTOS",
+                "${workspaceFolder}/Common",
+                "${workspaceFolder}/Application",
+                "${workspaceFolder}/Interface"
+            ],
+            "defines": [
+                "USE_HAL_DRIVER",
+                "STM32F103xB",
+                "DEBUG"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/Core/Inc",
+                    "${workspaceFolder}/Drivers/STM32F1xx_HAL_Driver/Inc",
+                    "${workspaceFolder}/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
+                    "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
+                    "${workspaceFolder}/Drivers/CMSIS/Include",
+                    "${workspaceFolder}/FreeRTOS/include",
+                    "${workspaceFolder}/FreeRTOS/portable",
+                    "${workspaceFolder}/FreeRTOS",
+                    "${workspaceFolder}/Common",
+                    "${workspaceFolder}/Application",
+                    "${workspaceFolder}/Interface"
+                ]
+            },
             "intelliSenseMode": "windows-gcc-arm",
             "cStandard": "c11",
             "cppStandard": "gnu++17"

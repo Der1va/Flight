@@ -134,6 +134,7 @@ uint8_t Int_SI24R1_TxPacket(uint8_t *txbuf)
 	while((state & (TX_DS | MAX_RT)) == 0)																
 	{
 		state = Int_SI24R1_Read_Reg(STATUS);
+		vTaskDelay(1);
 	}
 
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + STATUS, state); 		

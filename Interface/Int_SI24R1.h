@@ -3,6 +3,8 @@
 
 #include "spi.h"
 #include "common_debug.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 //stm32cube configure SI24R1 PIN DEFINITION
 //拉低片选
@@ -16,7 +18,7 @@
 #define CE_HIGH HAL_GPIO_WritePin(SI_EN_GPIO_Port, SI_EN_Pin, GPIO_PIN_SET);
 
 #define TX_ADR_WIDTH   5
-#define TX_PLOAD_WIDTH 32
+#define TX_PLOAD_WIDTH 17
 
 
 #define SI24R1_READ_REG        0x00  // Define read command to register

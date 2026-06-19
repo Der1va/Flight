@@ -18,6 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
+#include "dma.h"
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
@@ -26,6 +28,7 @@
 /* USER CODE BEGIN Includes */
 #include "common_debug.h"
 #include "Application.h"
+#include "Int_SI24R1.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,6 +49,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+volatile TaskHandle_t g_stack_overflow_task = NULL;
+volatile char *g_stack_overflow_task_name = NULL;
 
 /* USER CODE END PV */
 
@@ -89,14 +94,16 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
   //完成日志输出的打印
   //HAL_UART_Transmit(&huart2, (uint8_t *)"Hello, World!\r\n", 15, HAL_MAX_DELAY);
 
-
+  Int_SI24R1_Init();
   App_FreeRTOS_Start();
 
   /* USER CODE END 2 */
@@ -120,6 +127,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -149,9 +157,25 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
+/* void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+  g_stack_overflow_task = xTask;
+  g_stack_overflow_task_name = pcTaskName;
+
+  __disable_irq();
+  while (1)
+  {
+  }
+} */
 
 /* USER CODE END 4 */
 
