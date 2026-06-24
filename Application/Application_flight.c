@@ -23,7 +23,7 @@ PID_Controller yaw_pid = {.Kp = -1.5f, .Ki = 0.0f, .Kd = 0.0f};
 PID_Controller gyro_z_pid = {.Kp = -3.5f, .Ki = 0.0f, .Kd = 0.0f};
 
 //定高PID
-PID_Controller fix_height_pid = {.Kp = 1.0f, .Ki = 0.0f, .Kd = 0.0f};
+PID_Controller fix_height_pid = {.Kp = -3.0f, .Ki = 0.0f, .Kd = 0.0f};
 
 Motor_Struct Left_Motor_top = {.tim = &htim3, .channel = TIM_CHANNEL_1, .speed = 0};
 Motor_Struct Left_Motor_bottom = {.tim = &htim4, .channel = TIM_CHANNEL_4, .speed = 0};
@@ -76,18 +76,13 @@ void App_flight_pid_process(void)
 {
     //俯仰角
     pitch_pid.measurement = euler_angles.pitch;
-    pitch_pid.target = (remote_data.pitch - 500) / 120.0f;
+    pitch_pid.target = (remote_data.pitch - 500) / 60.0f;
     gyro_y_pid.measurement = imu_data.gyro_data.gyro_y * 2000 / 32768.0f;
     Common_PID_Calculate_chain(&pitch_pid, &gyro_y_pid);
     
     //横滚角
-    int16_t roll_error = remote_data.roll - 500;
-    if(roll_error > -5 && roll_error < 5)
-    {
-        roll_error = 0;
-    }
     roll_pid.measurement = euler_angles.roll;
-    roll_pid.target = roll_error / 120.0f;
+    roll_pid.target = (remote_data.roll - 500) / 60.0f;
     gyro_x_pid.measurement = imu_data.gyro_data.gyro_x * 2000 / 32768.0f;
     Common_PID_Calculate_chain(&roll_pid, &gyro_x_pid);
     
@@ -120,9 +115,9 @@ void App_flight_pid_process(void)
 
 void App_flight_control_motor(void)
 {
-    int16_t pitch_output = Common_Limit((int16_t)gyro_y_pid.output, -140, 140);
-    int16_t roll_output  = Common_Limit((int16_t)gyro_x_pid.output, -140, 140);
-    int16_t yaw_output   = Common_Limit((int16_t)gyro_z_pid.output, -80, 80);
+    int16_t pitch_output = Common_Limit((int16_t)gyro_y_pid.output, -200, 200);
+    int16_t roll_output  = Common_Limit((int16_t)gyro_x_pid.output, -200, 200);
+    int16_t yaw_output   = Common_Limit((int16_t)gyro_z_pid.output, -100, 100);
     //判断当前飞机的飞行状态
     switch (flight_state)
     {
@@ -144,10 +139,10 @@ void App_flight_control_motor(void)
             Right_Motor_bottom.speed = remote_data.thr - pitch_output + roll_output + yaw_output;
             break;
         case FLIGHT_STATE_STOPPED:
-            Left_Motor_top.speed = remote_data.thr + gyro_y_pid.output - gyro_x_pid.output + Common_Limit(gyro_z_pid.output, -250, 250) + fix_height_pid.output;
-            Left_Motor_bottom.speed = remote_data.thr - gyro_y_pid.output - gyro_x_pid.output - Common_Limit(gyro_z_pid.output, -250, 250) + fix_height_pid.output;
-            Right_Motor_top.speed = remote_data.thr + gyro_y_pid.output + gyro_x_pid.output - Common_Limit(gyro_z_pid.output, -250, 250) + fix_height_pid.output;
-            Right_Motor_bottom.speed = remote_data.thr - gyro_y_pid.output + gyro_x_pid.output + Common_Limit(gyro_z_pid.output, -250, 250) + fix_height_pid.output;
+            Left_Motor_top.speed = remote_data.thr + pitch_output - roll_output + yaw_output + fix_height_pid.output;
+            Left_Motor_bottom.speed = remote_data.thr - pitch_output - roll_output - yaw_output + fix_height_pid.output;
+            Right_Motor_top.speed = remote_data.thr + pitch_output + roll_output - yaw_output + fix_height_pid.output;
+            Right_Motor_bottom.speed = remote_data.thr - pitch_output + roll_output + yaw_output + fix_height_pid.output;
             break;
         case FLIGHT_STATE_ERROR:
             Left_Motor_top.speed -= 2;
