@@ -10,6 +10,7 @@
 #include "common_debug.h"
 #include <stdint.h>
 #include <string.h>
+#include "Application_flight.h"
 
 #define FRAME_HEADER_CHECK1 'c'
 #define FRAME_HEADER_CHECK2 'z'

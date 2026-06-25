@@ -1,6 +1,8 @@
 #include "Application.h"
 #include <stdint.h>
 
+extern volatile uint16_t telem_height_mm;
+
 LED_Struct LED_1 = {.port = LED1_GPIO_Port, .pin = LED1_Pin};
 LED_Struct LED_2 = {.port = LED2_GPIO_Port, .pin = LED2_Pin};
 LED_Struct LED_3 = {.port = LED3_GPIO_Port, .pin = LED3_Pin};
@@ -49,6 +51,7 @@ Remote_Data remote_data = {.thr = 0, .yaw = 500, .pitch = 500, .roll = 500, .shu
 
 //定高高度
 uint16_t fix_height = 0;
+int16_t fix_height_base_thr = 0;
 uint8_t back_buff[TX_PLOAD_WIDTH] = {0};
 
 void App_FreeRTOS_Start(void)
@@ -192,10 +195,38 @@ void comm_Task(void *args)
             back_buff[i] = 0;
         }
 
+        uint16_t height_mm = telem_height_mm;
+        uint32_t sum = 0;
+
         back_buff[0] = 'B';
-        back_buff[1] = 'V';
+        back_buff[1] = 'H';
+
         back_buff[2] = (voltage_mv >> 8) & 0xFF;
         back_buff[3] = voltage_mv & 0xFF;
+
+        back_buff[4] = (height_mm >> 8) & 0xFF;
+        back_buff[5] = height_mm & 0xFF;
+
+        back_buff[6] = (fix_height >> 8) & 0xFF;
+        back_buff[7] = fix_height & 0xFF;
+
+        back_buff[8] = (uint8_t)flight_state;
+
+        /* 9~12 保留，填 0 */
+        back_buff[9] = 0;
+        back_buff[10] = 0;
+        back_buff[11] = 0;
+        back_buff[12] = 0;
+
+        for(uint8_t i = 0; i < 13; i++)
+        {
+            sum += back_buff[i];
+        }
+
+        back_buff[13] = (sum >> 24) & 0xFF;
+        back_buff[14] = (sum >> 16) & 0xFF;
+        back_buff[15] = (sum >> 8) & 0xFF;
+        back_buff[16] = sum & 0xFF;
 
         vTaskDelay(COMM_TASK_PERIOD);
     }

@@ -42,4 +42,6 @@ void App_flight_control_motor(void);
 **/
 void App_flight_fix_height_pid_process(void);
 
+void App_flight_fix_height_reset(uint16_t current_height);
+
 #endif // APPLICATION_FLIGHT_H

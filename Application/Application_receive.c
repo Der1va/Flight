@@ -1,11 +1,10 @@
 #include "Application_receive.h"
-#include <stdint.h>
-
 
 extern Remote_Data remote_data;
 extern Remote_State remote_state;
 extern Flight_State flight_state;
 extern uint16_t fix_height;
+extern int16_t fix_height_base_thr;
 extern uint8_t back_buff[TX_PLOAD_WIDTH];
 Thr_State thr_state = FREE;
 //MAX状态的进入时间
@@ -154,7 +153,11 @@ void App_process_flight_state(void)
             // 飞行器处于正常飞行状态，执行飞行控制逻辑
             if(remote_data.fix_height == 1)
             {
-                // 执行定高逻辑
+                fix_height = Int_VL53L1X_Read_Distance();
+                fix_height_base_thr = remote_data.thr;
+
+                App_flight_fix_height_reset(fix_height);
+
                 flight_state = FLIGHT_STATE_STOPPED;
                 remote_data.fix_height = 0;
             }
@@ -165,7 +168,6 @@ void App_process_flight_state(void)
             }
             break;
         case FLIGHT_STATE_STOPPED:
-            fix_height = Int_VL53L1X_Read_Distance();
             if(remote_data.fix_height == 1)
             {
                 // 取消定高，恢复正常飞行

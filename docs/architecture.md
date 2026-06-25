@@ -13,8 +13,10 @@
 - MPU6050 陀螺仪/加速度计初始化、零偏校准和 IMU 读取。
 - 四元数姿态解算，输出 pitch、roll、yaw。
 - pitch、roll、yaw 串级 PID 控制。
+- 偏航摇杆控制转向角速度，松杆后保持新的相对航向。
 - VL53L1X 测距与定高 PID。
 - 四电机 PWM 混控输出。
+- 当前 pitch/roll/yaw 闭环已经完成实飞调通，可以实现较平稳飞行。
 - 电池电压 ADC 采样，并通过无线回传。
 - LED 状态指示。
 - IP5305T 电源按键模拟关机。
@@ -331,7 +333,7 @@ App_Calculate_Euler_Angles()
 App_flight_pid_process()
   pitch 外环角度 PID -> gyro_y 内环角速度 PID
   roll 外环角度 PID -> gyro_x 内环角速度 PID
-  yaw 外环角度 PID -> gyro_z 内环角速度 PID
+  yaw 摇杆输入 -> 目标航向积分 -> yaw 外环角度 PID -> gyro_z 内环角速度 PID
 
 如果 flight_state == STOPPED：
   每 4 次飞控循环执行一次定高 PID
@@ -367,21 +369,44 @@ output = Kp * error + Ki * integral * PID_TIME + Kd * derivative / PID_TIME
 | pitch | `Kp=-7.0, Ki=0, Kd=0` | gyro_y: `Kp=2.7, Ki=0, Kd=0.35` |
 | roll | `Kp=-7.0, Ki=0, Kd=0` | gyro_x: `Kp=2.7, Ki=0, Kd=0.35` |
 | yaw | `Kp=-1.5, Ki=0, Kd=0` | gyro_z: `Kp=-3.5, Ki=0, Kd=0` |
-| 定高 | `Kp=1.0, Ki=0, Kd=0` | 无内环 |
+| 定高 | `Kp=-0.2, Ki=0, Kd=0`，并叠加垂直速度阻尼 | 无内环 |
 
 其中 pitch 目标来自：
 
 ```text
-(remote_data.pitch - 500) / 120.0
+pitch_input = remote_data.pitch - 500
+pitch_input 经过约 ±10 的摇杆死区
+pitch_pid.target = pitch_input / 75.0
 ```
 
 roll 目标来自：
 
 ```text
-(remote_data.roll - 500) / 120.0
+roll_input = remote_data.roll - 500
+roll_input 经过约 ±10 的摇杆死区
+roll_pid.target = roll_input / 75.0
 ```
 
-roll 有 `-5 ~ 5` 的遥控死区。yaw 当前不是直接跟随遥控 yaw 指令，而是把目标角固定为 0，并对 yaw 角和 gyro_z 加了约 `-1 ~ 1` 的死区。
+偏航控制已经从早期“目标角固定为 0”的写法，改为“摇杆控制转向速度，松杆后保持新方向”的相对航向保持：
+
+```text
+yaw_input = 500 - remote_data.yaw
+yaw_input 经过约 ±10 的摇杆死区
+
+未进入 NORMAL/STOPPED 飞行状态时：
+  yaw_target = euler_angles.yaw
+
+进入 NORMAL 或 STOPPED 后：
+  yaw_rate_target = yaw_input * 90.0 / 490.0
+  yaw_target += yaw_rate_target * PID_TIME
+
+yaw_pid.measurement = euler_angles.yaw
+yaw_pid.target = yaw_target
+gyro_z_pid.measurement = gyro_z_deg_s
+Common_PID_Calculate_chain(&yaw_pid, &gyro_z_pid)
+```
+
+这样处理后，遥控 yaw 摇杆不是直接映射成一个固定角度，而是映射成最大约 `90 deg/s` 的目标偏航角速度；摇杆回中时 `yaw_target` 不再变化，外环继续把机体拉回到刚刚累积出的目标航向。由于当前硬件姿态估计没有磁力计参与，yaw 属于基于陀螺积分的相对航向保持，适合短时间抑制自旋和保持方向，但不等价于长期绝对航向锁定。
 
 ### 7.4 电机混控
 
@@ -403,11 +428,21 @@ Right_Motor_top.speed    = thr + pitch_output + roll_output - yaw_output
 Right_Motor_bottom.speed = thr - pitch_output + roll_output + yaw_output
 ```
 
+`FLIGHT_STATE_STOPPED` 当前实际表示定高模式，混控公式改用进入定高瞬间保存的 `fix_height_base_thr` 作为基础油门，并额外叠加高度环输出：
+
+```text
+Left_Motor_top.speed     = fix_height_base_thr + pitch_output - roll_output + yaw_output + height_output
+Left_Motor_bottom.speed  = fix_height_base_thr - pitch_output - roll_output - yaw_output + height_output
+Right_Motor_top.speed    = fix_height_base_thr + pitch_output + roll_output - yaw_output + height_output
+Right_Motor_bottom.speed = fix_height_base_thr - pitch_output + roll_output + yaw_output + height_output
+```
+
 限幅策略：
 
-- `pitch_output` 限制到 `-140 ~ 140`。
-- `roll_output` 限制到 `-140 ~ 140`。
-- `yaw_output` 限制到 `-80 ~ 80`。
+- `pitch_output` 限制到 `-200 ~ 200`。
+- `roll_output` 限制到 `-200 ~ 200`。
+- `yaw_output` 限制到 `-100 ~ 100`。
+- `height_output` 限制到 `-80 ~ 80`，只在定高模式下叠加到四个电机。
 - 四个电机最终速度限制到 `0 ~ 700`。
 - 如果 `remote_data.thr <= 50`，四个电机强制为 `0`。
 
