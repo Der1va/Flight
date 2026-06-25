@@ -4,7 +4,7 @@
 #include "Inf_OLED.h"
 #include "Int_SI24R1.h"
 #include "Application_process_data.h"
-
+#include "Application_transmit_data.h"
 /**
  * @brief 初始化屏幕
  * 

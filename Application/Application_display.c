@@ -1,7 +1,7 @@
 #include "Application_display.h"
 
 extern Remote_Data remote_data;
-extern uint8_t post_buff[TX_PLOAD_WIDTH];
+extern Flight_Telemetry flight_telem;
 
 #define LINE1_BEGIN 46
 #define LINE2_BEGIN 5
@@ -46,10 +46,9 @@ void APP_display_Show(void)
     }
     uint8_t voltage_str[8] = "0.00V";
 
-    if(post_buff[0] == 'B' && post_buff[1] == 'V')
+    if(flight_telem.valid)
     {
-        uint16_t voltage_mv = ((uint16_t)post_buff[2] << 8) | post_buff[3];
-        App_FormatVoltageString(voltage_mv, voltage_str);
+        App_FormatVoltageString(flight_telem.voltage_mv, voltage_str);
     }
 
     OLED_ShowString(LINE2_BEGIN, Y1, "V:", 12, 1);

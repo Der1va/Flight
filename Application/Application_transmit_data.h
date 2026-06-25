@@ -10,6 +10,19 @@
 #define FRAME_HEADER_CHECK2 'z'
 #define FRAME_HEADER_CHECK3 't'
 
+
+
+typedef struct
+{
+    uint16_t voltage_mv;
+    uint16_t height_mm;
+    uint16_t target_mm;
+    uint8_t flight_state;
+    uint8_t valid;
+} Flight_Telemetry;
+
+extern Flight_Telemetry flight_telem;
+
 /** 
     * @brief 发送数据
     * @param args 任务参数
